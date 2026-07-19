@@ -1,48 +1,49 @@
 import streamlit as st
 
-# ----------------------------
+# ==========================
 # Components
-# ----------------------------
+# ==========================
 from components.header import show_header
 from components.sidebar import show_sidebar
 from components.score_card import show_score
 from components.skills_panel import show_skills
 from components.footer import show_footer
 
-# ----------------------------
+# ==========================
 # Resume Parsers
-# ----------------------------
+# ==========================
 from parser.pdf_parser import extract_pdf_text
 from parser.docx_parser import extract_docx_text
 
-# ----------------------------
+# ==========================
 # Utilities
-# ----------------------------
+# ==========================
 from utils.text_cleaner import clean_text
 from utils.skills import extract_skills
 
-# ----------------------------
+# ==========================
 # Services
-# ----------------------------
+# ==========================
 from services.skill_matcher import compare_skills
 from services.ats_scorer import calculate_ats_score
+from services.openai_service import analyze_resume
 
 
 # =====================================
-# Header & Sidebar
+# Page
 # =====================================
 
 show_header()
 show_sidebar()
 
 # =====================================
-# User Input
+# Upload Section
 # =====================================
 
-st.subheader("Upload Resume")
+st.subheader("📄 Upload Resume")
 
 uploaded_resume = st.file_uploader(
-    "Upload Resume",
+    "Choose your resume",
     type=["pdf", "docx"]
 )
 
@@ -53,21 +54,21 @@ job_description = st.text_area(
 )
 
 # =====================================
-# Analyze Resume
+# Analyze Button
 # =====================================
 
-if st.button("Analyze Resume", use_container_width=True):
+if st.button("🚀 Analyze Resume", use_container_width=True):
 
     # ----------------------------
     # Validation
     # ----------------------------
 
     if uploaded_resume is None:
-        st.error("Please upload your resume.")
+        st.error("Please upload a resume.")
         st.stop()
 
     if not job_description.strip():
-        st.error("Please paste a Job Description.")
+        st.error("Please paste a job description.")
         st.stop()
 
     # ----------------------------
@@ -83,11 +84,11 @@ if st.button("Analyze Resume", use_container_width=True):
         resume_text = extract_docx_text(uploaded_resume)
 
     else:
-        st.error("Unsupported file type.")
+        st.error("Unsupported file format.")
         st.stop()
 
     # ----------------------------
-    # Clean Text
+    # Clean Resume
     # ----------------------------
 
     resume_text = clean_text(resume_text)
@@ -100,7 +101,7 @@ if st.button("Analyze Resume", use_container_width=True):
     jd_skills = extract_skills(job_description)
 
     # ----------------------------
-    # Skill Matching
+    # Match Skills
     # ----------------------------
 
     matched, missing = compare_skills(
@@ -133,30 +134,76 @@ if st.button("Analyze Resume", use_container_width=True):
         missing
     )
 
+    # =====================================
+    # AI Analysis
+    # =====================================
+
     st.divider()
-    
-    st.subheader("🤖 AI Analysis")
 
-    st.info(
-        """
-        AI-powered analysis is coming soon.
+    st.header("🤖 AI Resume Analysis")
 
-        Upcoming features:
+    with st.spinner("Analyzing resume using AI..."):
 
-        • ATS Explanation
+        analysis = analyze_resume(resume_text, job_description)
 
-        • Resume Strengths
+    if analysis is None:
+        st.error(
+            "❌ AI returned an invalid response. Please try again."
+        )
 
-        • Resume Weaknesses
+    else:
 
-        • Missing Keywords
+        score_col, summary_col = st.columns([1, 2])
 
-        • Resume Improvement Suggestions
+        with score_col:
+            st.metric(
+                "AI ATS Score",
+                f"{analysis.ats_score}/100"
+            )
 
-        • Professional Summary Generation
-        """
-    )
-    
+        with summary_col:
+            st.info(
+                analysis.professional_summary
+            )
+
+        st.divider()
+
+        left, right = st.columns(2)
+
+        with left:
+
+            st.success("💪 Strengths")
+
+            for strength in analysis.strengths:
+                st.write(f"✅ {strength}")
+
+        with right:
+
+            st.error("⚠ Weaknesses")
+
+            for weakness in analysis.weaknesses:
+                st.write(f"❌ {weakness}")
+
+        st.divider()
+
+        st.warning("📌 Missing Skills")
+
+        for skill in analysis.missing_skills:
+            st.write(f"• {skill}")
+
+        st.divider()
+
+        st.subheader("🚀 Suggestions")
+
+        for suggestion in analysis.suggestions:
+            st.write(f"✔ {suggestion}")
+
+    # =====================================
+    # Resume Preview
+    # =====================================
+
+    st.divider()
+
     with st.expander("📄 Resume Preview"):
 
         st.text_area(
@@ -164,5 +211,9 @@ if st.button("Analyze Resume", use_container_width=True):
             resume_text,
             height=350
         )
+
+# =====================================
+# Footer
+# =====================================
 
 show_footer()
