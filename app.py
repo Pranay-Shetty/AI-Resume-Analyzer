@@ -1,28 +1,45 @@
-from parser.pdf_parser import extract_pdf_text
-from parser.docx_parser import extract_docx_text
-from utils.text_cleaner import clean_text
-from utils.skills import extract_skills
-from services.skill_matcher import compare_skills
-from services.ats_scorer import calculate_ats_score
 import streamlit as st
 
-st.set_page_config(
-    page_title="AI Resume Analyzer",
-    page_icon="📄",
-    layout="wide"
-)
+# ----------------------------
+# Components
+# ----------------------------
+from components.header import show_header
+from components.sidebar import show_sidebar
+from components.score_card import show_score
+from components.skills_panel import show_skills
+from components.footer import show_footer
 
-st.title("📄 AI Resume Analyzer")
+# ----------------------------
+# Resume Parsers
+# ----------------------------
+from parser.pdf_parser import extract_pdf_text
+from parser.docx_parser import extract_docx_text
 
-st.markdown("""
-Welcome! Upload your resume and compare it against a Job Description using AI.
+# ----------------------------
+# Utilities
+# ----------------------------
+from utils.text_cleaner import clean_text
+from utils.skills import extract_skills
 
-This application will:
-- 📄 Read your resume
-- 🎯 Compare it with a Job Description
-- 📊 Calculate an ATS score
-- 💡 Suggest improvements
-""")
+# ----------------------------
+# Services
+# ----------------------------
+from services.skill_matcher import compare_skills
+from services.ats_scorer import calculate_ats_score
+
+
+# =====================================
+# Header & Sidebar
+# =====================================
+
+show_header()
+show_sidebar()
+
+# =====================================
+# User Input
+# =====================================
+
+st.subheader("Upload Resume")
 
 uploaded_resume = st.file_uploader(
     "Upload Resume",
@@ -35,81 +52,117 @@ job_description = st.text_area(
     placeholder="Paste the job description here..."
 )
 
-if st.button("Analyze Resume"):
+# =====================================
+# Analyze Resume
+# =====================================
+
+if st.button("Analyze Resume", use_container_width=True):
+
+    # ----------------------------
+    # Validation
+    # ----------------------------
 
     if uploaded_resume is None:
         st.error("Please upload your resume.")
+        st.stop()
 
-    elif not job_description.strip():
+    if not job_description.strip():
         st.error("Please paste a Job Description.")
+        st.stop()
+
+    # ----------------------------
+    # Resume Parsing
+    # ----------------------------
+
+    extension = uploaded_resume.name.split(".")[-1].lower()
+
+    if extension == "pdf":
+        resume_text = extract_pdf_text(uploaded_resume)
+
+    elif extension == "docx":
+        resume_text = extract_docx_text(uploaded_resume)
 
     else:
+        st.error("Unsupported file type.")
+        st.stop()
 
-        file_extension = uploaded_resume.name.split(".")[-1].lower()
+    # ----------------------------
+    # Clean Text
+    # ----------------------------
 
-        if file_extension == "pdf":
-            resume_text = extract_pdf_text(uploaded_resume)
-            resume_text = clean_text(resume_text)
-            resume_skills = extract_skills(resume_text)
-            jd_skills = extract_skills(job_description)
-            matched, missing = compare_skills(resume_skills,jd_skills)
-            ats_score = calculate_ats_score(resume_text,matched,jd_skills)
+    resume_text = clean_text(resume_text)
 
-        elif file_extension == "docx":
-            resume_text = extract_docx_text(uploaded_resume)
-            resume_text = clean_text(resume_text)
-            resume_skills = extract_skills(resume_text)
-            jd_skills = extract_skills(job_description)
-            matched, missing = compare_skills(resume_skills,jd_skills)
-            ats_score = calculate_ats_score(resume_text,matched,jd_skills)
+    # ----------------------------
+    # Extract Skills
+    # ----------------------------
 
-        else:
-            st.error("Unsupported file type.")
-            st.stop()
+    resume_skills = extract_skills(resume_text)
+    jd_skills = extract_skills(job_description)
 
-        st.success("Resume Parsed Successfully!")
+    # ----------------------------
+    # Skill Matching
+    # ----------------------------
 
-        st.subheader("Extracted Resume Text")
+    matched, missing = compare_skills(
+        resume_skills,
+        jd_skills
+    )
+
+    # ----------------------------
+    # ATS Score
+    # ----------------------------
+
+    ats_score = calculate_ats_score(
+        resume_text,
+        matched,
+        jd_skills
+    )
+
+    # =====================================
+    # Results
+    # =====================================
+
+    st.divider()
+
+    show_score(ats_score)
+
+    st.divider()
+
+    show_skills(
+        matched,
+        missing
+    )
+
+    st.divider()
+    
+    st.subheader("🤖 AI Analysis")
+
+    st.info(
+        """
+        AI-powered analysis is coming soon.
+
+        Upcoming features:
+
+        • ATS Explanation
+
+        • Resume Strengths
+
+        • Resume Weaknesses
+
+        • Missing Keywords
+
+        • Resume Improvement Suggestions
+
+        • Professional Summary Generation
+        """
+    )
+    
+    with st.expander("📄 Resume Preview"):
 
         st.text_area(
             "",
             resume_text,
-            height=400
+            height=350
         )
-        #Display Results
-        st.subheader("Detected Resume Skills")
-        st.write(resume_skills)
 
-        st.subheader("Detected Job Skills")
-        st.write(jd_skills)
-        
-        st.subheader("ATS Score")
-
-        st.metric(
-            label="Overall ATS Score",
-            value=f"{ats_score}/100"
-        )
-        
-        if ats_score >= 85:
-            st.success("Excellent! Your resume is highly compatible with this job.")
-
-        elif ats_score >= 70:
-            st.info("Good match. A few improvements can increase your chances.")
-
-        elif ats_score >= 50:
-            st.warning("Moderate match. Consider improving missing skills and resume content.")
-
-        else:
-            st.error("Low match. Your resume needs significant improvements for this role.")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.success("Matched Skills")
-            for skill in matched:
-                st.write(f"✅ {skill}")
-
-        with col2:
-            st.error("Missing Skills")
-            for skill in missing:
-                st.write(f"❌ {skill}")
+show_footer()
