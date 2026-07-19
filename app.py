@@ -8,60 +8,63 @@ from components.sidebar import show_sidebar
 from components.score_card import show_score
 from components.skills_panel import show_skills
 from components.footer import show_footer
+from components.charts import show_skill_chart
+from components.hero import show_hero
+from components.upload_panel import render_upload_panel
 
-# ==========================
-# Resume Parsers
-# ==========================
-from parser.pdf_parser import extract_pdf_text
-from parser.docx_parser import extract_docx_text
+# =========================
+# Pages
+# =========================
+from pages.analysis_tab import render_analysis_tab
+from pages.ai_tab import render_ai_tab
+from pages.resume_preview_tab import render_resume_tab
 
-# ==========================
-# Utilities
-# ==========================
-from utils.text_cleaner import clean_text
-from utils.skills import extract_skills
-
-# ==========================
+# =====================================
 # Services
-# ==========================
-from services.skill_matcher import compare_skills
-from services.ats_scorer import calculate_ats_score
-from services.openai_service import analyze_resume
+# =====================================
+from services.resume_analyzer import analyze_resume_file
 
+# =====================================
+# CSS
+# =====================================
+st.set_page_config(
+    page_title="AI Resume Analyzer",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
+def load_css():
+    with open("assets/styles.css") as f:
+        st.markdown(
+            f"<style>{f.read()}</style>",
+            unsafe_allow_html=True
+        )
+        
+# =====================================
+# Session State
+# =====================================
+
+if "analysis_complete" not in st.session_state:
+    st.session_state.analysis_complete = False
+    
 # =====================================
 # Page
 # =====================================
-
-show_header()
+load_css()
+show_hero()
 show_sidebar()
 
 # =====================================
 # Upload Section
 # =====================================
-
-st.subheader("📄 Upload Resume")
-
-uploaded_resume = st.file_uploader(
-    "Choose your resume",
-    type=["pdf", "docx"]
-)
-
-job_description = st.text_area(
-    "Paste Job Description",
-    height=250,
-    placeholder="Paste the job description here..."
-)
+uploaded_resume, job_description, analyze_clicked = render_upload_panel()
 
 # =====================================
 # Analyze Button
 # =====================================
 
-if st.button("🚀 Analyze Resume", use_container_width=True):
-
-    # ----------------------------
-    # Validation
-    # ----------------------------
+if analyze_clicked:
 
     if uploaded_resume is None:
         st.error("Please upload a resume.")
@@ -70,6 +73,17 @@ if st.button("🚀 Analyze Resume", use_container_width=True):
     if not job_description.strip():
         st.error("Please paste a job description.")
         st.stop()
+
+    try:
+        analyze_resume_file(
+            uploaded_resume,
+            job_description
+        )
+
+        st.rerun()
+
+    except Exception as e:
+        st.error(str(e))
 
     # ----------------------------
     # Resume Parsing
@@ -108,6 +122,15 @@ if st.button("🚀 Analyze Resume", use_container_width=True):
         resume_skills,
         jd_skills
     )
+    
+    total_skills = len(jd_skills)
+
+    if total_skills > 0:
+        skill_match_percentage = round(
+            (len(matched) / total_skills) * 100
+        )
+    else:
+        skill_match_percentage = 0
 
     # ----------------------------
     # ATS Score
@@ -118,99 +141,54 @@ if st.button("🚀 Analyze Resume", use_container_width=True):
         matched,
         jd_skills
     )
+    # ----------------------------
+    # AI Analysis
+    # ----------------------------
 
-    # =====================================
-    # Results
-    # =====================================
-
-    st.divider()
-
-    show_score(ats_score)
-
-    st.divider()
-
-    show_skills(
-        matched,
-        missing
+    analysis = analyze_resume(
+        resume_text,
+        job_description
     )
 
-    # =====================================
-    # AI Analysis
-    # =====================================
+    # ----------------------------
+    # Save Everything
+    # ----------------------------
 
-    st.divider()
+    st.session_state.resume_text = resume_text
+    st.session_state.matched = matched
+    st.session_state.missing = missing
+    st.session_state.ats_score = ats_score
+    st.session_state.skill_match_percentage = skill_match_percentage
+    st.session_state.analysis = analysis
 
-    st.header("🤖 AI Resume Analysis")
+    st.session_state.analysis_complete = True
 
-    with st.spinner("Analyzing resume using AI..."):
+    st.rerun()
 
-        analysis = analyze_resume(resume_text, job_description)
+# =====================================
+# Results Tabs
+# =====================================
 
-    if analysis is None:
-        st.error(
-            "❌ AI returned an invalid response. Please try again."
+if st.session_state.analysis_complete:
+    tab1, tab2, tab3 = st.tabs([
+        "📊 Analysis",
+        "🤖 AI Insights",
+        "📄 Resume Preview"
+    ])
+    
+    with tab1:
+        render_analysis_tab(
+            st.session_state.ats_score,
+            st.session_state.skill_match_percentage,
+            st.session_state.matched,
+            st.session_state.missing
         )
 
-    else:
+    with tab2:
+        render_ai_tab(st.session_state.analysis)
 
-        score_col, summary_col = st.columns([1, 2])
-
-        with score_col:
-            st.metric(
-                "AI ATS Score",
-                f"{analysis.ats_score}/100"
-            )
-
-        with summary_col:
-            st.info(
-                analysis.professional_summary
-            )
-
-        st.divider()
-
-        left, right = st.columns(2)
-
-        with left:
-
-            st.success("💪 Strengths")
-
-            for strength in analysis.strengths:
-                st.write(f"✅ {strength}")
-
-        with right:
-
-            st.error("⚠ Weaknesses")
-
-            for weakness in analysis.weaknesses:
-                st.write(f"❌ {weakness}")
-
-        st.divider()
-
-        st.warning("📌 Missing Skills")
-
-        for skill in analysis.missing_skills:
-            st.write(f"• {skill}")
-
-        st.divider()
-
-        st.subheader("🚀 Suggestions")
-
-        for suggestion in analysis.suggestions:
-            st.write(f"✔ {suggestion}")
-
-    # =====================================
-    # Resume Preview
-    # =====================================
-
-    st.divider()
-
-    with st.expander("📄 Resume Preview"):
-
-        st.text_area(
-            "",
-            resume_text,
-            height=350
-        )
+    with tab3:
+        render_resume_tab(st.session_state.resume_text)
 
 # =====================================
 # Footer

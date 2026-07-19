@@ -1,0 +1,191 @@
+/* ==========================
+   Main App
+========================== */
+
+.main {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+}
+
+/* ==========================
+   Header
+========================== */
+
+h1 {
+    font-size: 3rem !important;
+    font-weight: 700;
+}
+
+h2 {
+    font-weight: 600;
+}
+
+h3 {
+    font-weight: 600;
+}
+
+/* ==========================
+   Metric Cards
+========================== */
+
+[data-testid="metric-container"] {
+    background: white;
+    border: 1px solid #ececec;
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,.05);
+    transition: 0.25s;
+}
+
+[data-testid="metric-container"]:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px rgba(0,0,0,.08);
+}
+
+/* ==========================
+   Buttons
+========================== */
+
+.stButton button {
+    width: 100%;
+    height: 52px;
+    border-radius: 14px;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+/* ==========================
+   Text Area
+========================== */
+
+textarea {
+    border-radius: 12px !important;
+}
+
+/* ==========================
+   File Uploader
+========================== */
+
+[data-testid="stFileUploader"] {
+    border-radius: 15px;
+    border: 2px dashed #bbb;
+    padding: 18px;
+}
+
+/* ==========================
+   Tabs
+========================== */
+
+.stTabs [role="tab"] {
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-weight: 600;
+}
+
+.stTabs [aria-selected="true"] {
+    background: #0e76fd;
+    color: white;
+}
+
+/* ==========================
+   Expanders
+========================== */
+
+.streamlit-expanderHeader {
+    font-weight: 600;
+}
+
+/* ==========================
+   Custom Metric Cards
+========================== */
+
+.metric-card {
+    background: white;
+    border-radius: 18px;
+    padding: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,.06);
+    border-left: 6px solid #0e76fd;
+    transition: all .3s ease;
+    min-height: 180px;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 32px rgba(0,0,0,.12);
+}
+
+.metric-icon {
+    font-size: 30px;
+}
+
+.metric-title {
+    margin-top: 10px;
+    color: #666;
+    font-size: 15px;
+}
+
+.metric-value {
+    margin-top: 15px;
+    font-size: 40px;
+    font-weight: bold;
+}
+
+.metric-subtitle {
+    margin-top: 10px;
+    color: #888;
+    font-size: 14px;
+}
+
+/* ==========================
+   Hero
+========================== */
+
+.hero {
+    background: linear-gradient(135deg,#0e76fd,#4f46e5);
+    padding:30px 40px;
+    border-radius:20px;
+    text-align:center;
+    color:white;
+    margin-bottom:30px;
+}
+
+.hero h1{
+    color:white !important;
+    margin-bottom:15px;
+    font-size:3rem;
+}
+
+.hero p{
+    color:#f3f4f6;
+    font-size:18px;
+    max-width:800px;
+    margin:auto;
+}
+/* ==================================
+   Upload Section
+=================================== */
+
+[data-testid="stFileUploader"] {
+    border: 2px dashed #3b82f6;
+    border-radius: 18px;
+    padding: 18px;
+    background: rgba(59,130,246,.05);
+}
+
+[data-testid="stTextArea"] textarea {
+    border-radius: 18px;
+    font-size: 15px;
+    border: 1px solid #334155;
+}
+
+.stButton button {
+    height: 58px;
+    border-radius: 18px;
+    font-size: 18px;
+    font-weight: 700;
+    transition: all .25s ease;
+}
+
+.stButton button:hover {
+    transform: translateY(-2px);
+}
