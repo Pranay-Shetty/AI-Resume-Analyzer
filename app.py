@@ -3,6 +3,7 @@ from parser.docx_parser import extract_docx_text
 from utils.text_cleaner import clean_text
 from utils.skills import extract_skills
 from services.skill_matcher import compare_skills
+from services.ats_scorer import calculate_ats_score
 import streamlit as st
 
 st.set_page_config(
@@ -52,6 +53,7 @@ if st.button("Analyze Resume"):
             resume_skills = extract_skills(resume_text)
             jd_skills = extract_skills(job_description)
             matched, missing = compare_skills(resume_skills,jd_skills)
+            ats_score = calculate_ats_score(resume_text,matched,jd_skills)
 
         elif file_extension == "docx":
             resume_text = extract_docx_text(uploaded_resume)
@@ -59,6 +61,7 @@ if st.button("Analyze Resume"):
             resume_skills = extract_skills(resume_text)
             jd_skills = extract_skills(job_description)
             matched, missing = compare_skills(resume_skills,jd_skills)
+            ats_score = calculate_ats_score(resume_text,matched,jd_skills)
 
         else:
             st.error("Unsupported file type.")
@@ -79,6 +82,25 @@ if st.button("Analyze Resume"):
 
         st.subheader("Detected Job Skills")
         st.write(jd_skills)
+        
+        st.subheader("ATS Score")
+
+        st.metric(
+            label="Overall ATS Score",
+            value=f"{ats_score}/100"
+        )
+        
+        if ats_score >= 85:
+            st.success("Excellent! Your resume is highly compatible with this job.")
+
+        elif ats_score >= 70:
+            st.info("Good match. A few improvements can increase your chances.")
+
+        elif ats_score >= 50:
+            st.warning("Moderate match. Consider improving missing skills and resume content.")
+
+        else:
+            st.error("Low match. Your resume needs significant improvements for this role.")
 
         col1, col2 = st.columns(2)
 
